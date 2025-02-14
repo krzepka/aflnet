@@ -988,33 +988,14 @@ int send_over_network()
 {
   int n;
   u8 likely_buggy = 0;
-  struct sockaddr_in serv_addr;
-  struct sockaddr_in local_serv_addr;
-
-  //Clean up the server if needed
-  if (cleanup_script) system(cleanup_script);
-
-  //Wait a bit for the server initialization
-  usleep(server_wait_usecs);
-
-  //Clear the response buffer and reset the response buffer size
-  if (response_buf) {
-    ck_free(response_buf);
-    response_buf = NULL;
-    response_buf_size = 0;
-  }
-
-  if (response_bytes) {
-    ck_free(response_bytes);
-    response_bytes = NULL;
-  }
-
   //Create a TCP/UDP socket
   int sockfd = -1;
   if (net_protocol == PRO_TCP)
     sockfd = socket(AF_INET, SOCK_STREAM, 0);
   else if (net_protocol == PRO_UDP)
     sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+  else if (net_protocol == PRO_IPV6)
+    sockfd = socket(AF_INET6, SOCK_STREAM, 0);
 
   if (sockfd < 0) {
     PFATAL("Cannot create a socket");
@@ -1027,6 +1008,30 @@ int send_over_network()
   timeout.tv_usec = socket_timeout_usecs;
   setsockopt(sockfd, SOL_SOCKET, SO_SNDTIMEO, (char *)&timeout, sizeof(timeout));
 
+  if (net_protocol == PRO_IPV6) {
+    struct sockaddr_in6 serv_addr6;
+    memset(&serv_addr6, '0', sizeof(serv_addr6));
+
+    serv_addr6.sin6_family = AF_INET6;
+    serv_addr6.sin6_port = htons(net_port);
+    inet_pton(AF_INET6, net_ip, &serv_addr6.sin6_addr);
+
+    if (connect(sockfd, (struct sockaddr *)&serv_addr6, sizeof(serv_addr6)) < 0) {
+      //If it cannot connect to the server under test
+      //try it again as the server initial startup time is varied
+      for (n = 0; n < 1000; n++) {
+        if (connect(sockfd, (struct sockaddr *)&serv_addr6, sizeof(serv_addr6)) == 0) break;
+        usleep(1000);
+      }
+      if (n == 1000) {
+        close(sockfd);
+        return 1;
+      }
+    }
+  } else {
+    struct sockaddr_in serv_addr;
+    struct sockaddr_in local_serv_addr;
+
   memset(&serv_addr, '0', sizeof(serv_addr));
 
   serv_addr.sin_family = AF_INET;
@@ -1036,27 +1041,28 @@ int send_over_network()
   //This piece of code is only used for targets that send responses to a specific port number
   //The Kamailio SIP server is an example. After running this code, the intialized sockfd 
   //will be bound to the given local port
-  if(local_port > 0) {
+    if (local_port > 0) {
     local_serv_addr.sin_family = AF_INET;
     local_serv_addr.sin_addr.s_addr = INADDR_ANY;
     local_serv_addr.sin_port = htons(local_port);
 
     local_serv_addr.sin_addr.s_addr = inet_addr("127.0.0.1");
-    if (bind(sockfd, (struct sockaddr*) &local_serv_addr, sizeof(struct sockaddr_in)))  {
+      if (bind(sockfd, (struct sockaddr*) &local_serv_addr, sizeof(struct sockaddr_in))) {
       FATAL("Unable to bind socket on local source port");
     }
   }
 
-  if(connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
+    if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0) {
     //If it cannot connect to the server under test
     //try it again as the server initial startup time is varied
-    for (n=0; n < 1000; n++) {
+      for (n = 0; n < 1000; n++) {
       if (connect(sockfd, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) == 0) break;
       usleep(1000);
     }
-    if (n== 1000) {
+      if (n == 1000) {
       close(sockfd);
       return 1;
+      }
     }
   }
 
