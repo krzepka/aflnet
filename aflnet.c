@@ -2596,7 +2596,7 @@ void str_rtrim(char* a_str)
 	}
 }
 
-int parse_net_config(u8* net_config, u8* protocol, u8** ip_address, u32* port)
+int parse_net_config(u8* net_config, u8* ip_version, u8* protocol, u8** ip_address, u32* port)
 {
   char  buf[80];
   char **tokens;
@@ -2619,6 +2619,13 @@ int parse_net_config(u8* net_config, u8* protocol, u8** ip_address, u32* port)
 
       //TODO: check the format of this IP address
       *ip_address = strdup(tokens[1]);
+      if (strchr(*ip_address, ':')) {
+        *ip_version = PRO_IPV6;
+        OKF("Using IPv6");
+      } else {
+        *ip_version = PRO_IPV4;
+        OKF("Using IPv4");
+      }
 
       *port = atoi(tokens[2]);
       if (*port == 0) return 1;

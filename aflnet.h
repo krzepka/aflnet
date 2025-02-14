@@ -38,6 +38,11 @@ enum {
 };
 
 enum {
+  /* 00 */ PRO_IPV4,
+  /* 01 */ PRO_IPV6
+};
+
+enum {
   /* 00 */ INVALID_SELECTION,
   /* 01 */ RANDOM_SELECTION,
   /* 02 */ ROUND_ROBIN,
@@ -131,7 +136,7 @@ int str_split(char* a_str, const char* a_delim, char **result, int a_count);
 void str_rtrim(char* a_str);
 
 /* Parse user provided server information to get IP address, transport protocol (TCP/UDP) and port number */
-int parse_net_config(u8* net_config, u8* protocol, u8** ip_address, u32* port);
+int parse_net_config(u8* net_config, u8* ip_version, u8* protocol, u8** ip_address, u32* port);
 
 /* Convert state sequence to string */
 u8* state_sequence_to_string(unsigned int *stateSequence, unsigned int stateCount);
