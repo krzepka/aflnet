@@ -356,6 +356,7 @@ static inline u8 has_new_bits(u8* virgin_map);
 u32 server_wait_usecs = 10000;
 u32 poll_wait_msecs = 1;
 u32 socket_timeout_usecs = 1000;
+u8 ip_version;
 u8 net_protocol;
 u8* net_ip;
 u32 net_port;
@@ -9008,7 +9009,7 @@ int main(int argc, char** argv) {
 
       case 'N': /* Network configuration */
         if (use_net) FATAL("Multiple -N options not supported");
-        if (parse_net_config(optarg, &net_protocol, &net_ip, &net_port)) FATAL("Bad syntax used for -N. Check the network setting. [tcp/udp]://127.0.0.1/port");
+        if (parse_net_config(optarg, &ip_version, &net_protocol, &net_ip, &net_port)) FATAL("Bad syntax used for -N. Check the network setting. [tcp/udp]://127.0.0.1/port");
 
         use_net = 1;
         break;
