@@ -991,12 +991,17 @@ int send_over_network()
   u8 likely_buggy = 0;
   //Create a TCP/UDP socket
   int sockfd = -1;
-  if (net_protocol == PRO_TCP)
-    sockfd = socket(AF_INET, SOCK_STREAM, 0);
-  else if (net_protocol == PRO_UDP)
-    sockfd = socket(AF_INET, SOCK_DGRAM, 0);
-  else if (net_protocol == PRO_IPV6)
-    sockfd = socket(AF_INET6, SOCK_STREAM, 0);
+  if (net_protocol == PRO_IPV6) {
+    if (net_protocol == PRO_TCP)
+      sockfd = socket(AF_INET6, SOCK_STREAM, 0);
+    else if (net_protocol == PRO_UDP)
+      sockfd = socket(AF_INET6, SOCK_DGRAM, 0);
+  } else {
+    if (net_protocol == PRO_TCP)
+      sockfd = socket(AF_INET, SOCK_STREAM, 0);
+    else if (net_protocol == PRO_UDP)
+      sockfd = socket(AF_INET, SOCK_DGRAM, 0);
+  }
 
   if (sockfd < 0) {
     PFATAL("Cannot create a socket");
@@ -1025,6 +1030,7 @@ int send_over_network()
         usleep(1000);
       }
       if (n == 1000) {
+        OKF("Cannot connect to the server under test: %s:%d", net_ip, net_port);
         close(sockfd);
         return 1;
       }
