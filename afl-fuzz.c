@@ -1125,7 +1125,7 @@ HANDLE_RESPONSES:
 
   if (likely_buggy && false_negative_reduction) return 0;
 
-  if (terminate_child && (child_pid > 0)) kill(child_pid, SIGTERM);
+    kill(child_pid, SIGINT);
 
   //give the server a bit more time to gracefully terminate
   while(1) {
